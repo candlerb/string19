@@ -145,7 +145,7 @@ class TestString < Test::Unit::TestCase
 # The choice of locale is made at runtime based on environment variables,
 # see setlocale(3)
 
-  res = %x{env LANG=en_US.utf8 #{RUBY} -e "puts Encoding.locale_charmap"}.chomp
+  res = %x{env LC_ALL=en_US.utf8 #{RUBY} -e "puts Encoding.locale_charmap"}.chomp
   is "UTF-8", res
 
 # Quoting from the Encoding.locale_charmap documentation: "The result is
@@ -155,9 +155,9 @@ class TestString < Test::Unit::TestCase
 
 # On Linux systems, the 'C' locale maps to the ANSI_X3.4-1968 character set.
 
-  res = %x{env LANG=C #{RUBY} -e "puts Encoding.locale_charmap"}.chomp
+  res = %x{env LC_ALL=C #{RUBY} -e "puts Encoding.locale_charmap"}.chomp
   if res != "ANSI_X3.4-1968"
-    STDERR.puts "WARNING: got #{res.inspect} as locale_charmap for LANG=C"
+    STDERR.puts "WARNING: got #{res.inspect} as locale_charmap for LC_ALL=C"
   end
 
 # On systems which have no locale support at all, the fallback is US-ASCII.
@@ -1255,9 +1255,9 @@ EOS
 # overridden using a #encoding line
 
   is "UTF-8",
-    %x{ echo "puts ''.encoding" | env LANG=en_US.utf8 #{RUBY} }.chomp
+    %x{ echo "puts ''.encoding" | env LC_ALL=en_US.utf8 #{RUBY} }.chomp
   is "ASCII-8BIT",
-    %x{ echo '#encoding:ASCII-8BIT\nputs "".encoding' | env LANG=en_US.utf8 #{RUBY} }.chomp
+    %x{ echo '#encoding:ASCII-8BIT\nputs "".encoding' | env LC_ALL=en_US.utf8 #{RUBY} }.chomp
 
 # 18.3 Source on the command line
 #
@@ -1265,9 +1265,9 @@ EOS
 # using a #encoding line
 
   is "UTF-8",
-    %x{ env LANG=en_US.utf8 #{RUBY} -e 'puts "".encoding' }.chomp
+    %x{ env LC_ALL=en_US.utf8 #{RUBY} -e 'puts "".encoding' }.chomp
   is "ISO-8859-1",
-    %x{ env LANG=en_US.utf8 #{RUBY} -e '#encoding:ISO-8859-1' -e 'puts "".encoding' }.chomp
+    %x{ env LC_ALL=en_US.utf8 #{RUBY} -e '#encoding:ISO-8859-1' -e 'puts "".encoding' }.chomp
     
 # 18.4 Source in eval
 #
@@ -1573,7 +1573,7 @@ EOS
 # installed - here I will choose UTF-8 from the environment, but the source
 # encoding is ISO-8859-1.
 
-  res = %x{ echo "abc" | env LANG=en_US.utf8 #{RUBY} -e "#encoding:ISO-8859-1" -e "puts ''.encoding; puts STDIN.gets.encoding"}.chomp
+  res = %x{ echo "abc" | env LC_ALL=en_US.utf8 #{RUBY} -e "#encoding:ISO-8859-1" -e "puts ''.encoding; puts STDIN.gets.encoding"}.chomp
   is "ISO-8859-1\nUTF-8", res
 
 # There is an accessor, Encoding.default_external=, which can be used
@@ -1688,7 +1688,7 @@ EOS
 
 # 22.3 Clean the environment
 #
-# You can explicitly set the LANG environment variable before running your
+# You can explicitly set the LC_ALL environment variable before running your
 # ruby script, or run with -Ku to force UTF-8 or -Kn to force ASCII-8BIT.
 #
 # The problem is, this won't work if your code is made up of individual
@@ -1700,7 +1700,7 @@ EOS
 # You can run your test suite under each environment which you expect to
 # run under, or try to fake up those environments by installing the
 # necessary locales on one system and then running the test suite multiple
-# times with different LANG settings. This is a bit of a pain.
+# times with different LC_ALL settings. This is a bit of a pain.
 
 # 22.5 Expand test coverage
 #
@@ -1731,7 +1731,7 @@ end # def test_string19
 private
   def execute_in_file(str)
     write_file(str) do |fn|
-      %x{ env LANG=en_US.utf8 #{RUBY} #{fn} 2>&1 }.chomp
+      %x{ env LC_ALL=en_US.utf8 #{RUBY} #{fn} 2>&1 }.chomp
     end
   end
 
