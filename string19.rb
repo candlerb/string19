@@ -1595,17 +1595,18 @@ EOS
     end
   end
 
-# Normally, writing a string to a file ignores the encoding property.
-# However if the internal encoding is set, then the characters are
-# transcoded from the internal encoding to the external encoding.
+# Writing to a file is different. If you have specified the external
+# encoding then transcoding *always* takes place from the encoding of
+# the String you are writing, to the external encoding of the file.
+# As far as I can tell, the internal encoding is ignored in this case.
 
   begin
-    File.open(TMPFILE, "w:ISO-8859-1:UTF-8") do |f|
-      is [Encoding::ISO_8859_1, Encoding::UTF_8],
+    File.open(TMPFILE, "w:ISO-8859-1") do |f|
+      is [Encoding::ISO_8859_1, nil],
         [f.external_encoding, f.internal_encoding]
       f.puts "über"
     end
-    File.open(TMPFILE, "r:ASCII-8BIT") do |f|
+    File.open(TMPFILE, "rb") do |f|
       is "\xfcber\n".force_encoding("ASCII-8BIT"),
         f.gets
     end
@@ -1616,11 +1617,25 @@ EOS
 # Note that unlike read(), even data written using write() is transcoded.
 
   begin
-    File.open(TMPFILE, "w:ISO-8859-1:UTF-8") do |f|
+    File.open(TMPFILE, "w:ISO-8859-1") do |f|
       f.write "über"
     end
-    File.open(TMPFILE, "r:ASCII-8BIT") do |f|
+    File.open(TMPFILE, "rb") do |f|
       is "\xfcber".force_encoding("ASCII-8BIT"),
+        f.gets
+    end
+  ensure
+    File.delete(TMPFILE)
+  end
+
+# If you don't want to transcode, then open the file in binary mode.
+
+  begin
+    File.open(TMPFILE, "wb") do |f|
+      f.write "über"
+    end
+    File.open(TMPFILE, "rb") do |f|
+      is "\xC3\xBCber".force_encoding("ASCII-8BIT"),
         f.gets
     end
   ensure
