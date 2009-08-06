@@ -563,18 +563,24 @@ end
     [a.encoding, b.encoding, Encoding.compatible?(a, b)]
 
 # 5. If one object is a String which contains only 7-bit ASCII characters
-#    (ascii_only?), then the objects are compatible and the result has the
+#    (ascii_only?), and the other is an object with an ASCII-compatible
+#    encoding, then the objects are compatible and the result has the
 #    encoding of the other object.
 
-  a = "hello"
-  b = "\xff".force_encoding "ISO-8859-1"
+  a = "hello"                               # ascii_only
+  b = "\xff".force_encoding "ISO-8859-1"    # ascii_compat encoding
   is [Encoding::UTF_8, Encoding::ISO_8859_1, Encoding::ISO_8859_1],
     [a.encoding, b.encoding, Encoding.compatible?(a,b)]
 
-  a = "groß"
-  b = "world".force_encoding "ISO-8859-1"
+  a = "groß"                                # ascii_compat encoding
+  b = "world".force_encoding "ISO-8859-1"   # ascii_only
   is [Encoding::UTF_8, Encoding::ISO_8859_1, Encoding::UTF_8],
     [a.encoding, b.encoding, Encoding.compatible?(a,b)]
+
+  a = "hello"                               # ascii_only
+  b = "\xff\xff".force_encoding("UTF-16BE") # not ascii_compat
+  is nil,
+    Encoding.compatible?(a, b)
 
 # If *both* are strings containing only 7-bit ASCII characters, then the
 # result has the encoding of the first.
