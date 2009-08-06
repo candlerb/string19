@@ -576,6 +576,14 @@ end
   is [Encoding::UTF_8, Encoding::ISO_8859_1, Encoding::UTF_8],
     [a.encoding, b.encoding, Encoding.compatible?(a,b)]
 
+# If *both* are strings containing only 7-bit ASCII characters, then the
+# result has the encoding of the first.
+
+  a = "hello".force_encoding "ISO-8859-1"
+  b = "world"
+  is Encoding::ISO_8859_1,
+    Encoding.compatible?(a,b)
+
 # REFERENCE: rb_enc_compatible() in encoding.c
 
 ############# 6. STRING CONCATENATION #############
