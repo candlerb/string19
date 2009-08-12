@@ -1,30 +1,86 @@
 =begin rant
-Skip this section if you are not interested in my personal opinion.
 
-All this stuff scares me, and I absolutely detest it. I have been with ruby
-since 1.6; what I love is that code you write is simple and compact, and the
-language usually doesn't bite you.  With ruby 1.9, I find this is no longer
-the case.
+For me, I absolutely hate all this encoding stuff in ruby 1.9, and I'll try
+to explain why here.
 
-* Every time I write a simple statement like "a << b", I have to
-  consider the possibility that my program may crash. With ruby 1.8,
-  if I know that a and b are both strings, this will not happen.
+* As a programmer, the most important thing for me is to be able to reason
+  about the code I write.  Reasoning tells me whether the code I write is
+  likely to run, terminate, and give the result I want.
   
-  What's worse, it doesn't *always* crash if strings with two different
-  encodings encounter each other. This means a program may crash when it
-  receives unforeseen data, which means you need a lot more work to ensure
-  your tests have sufficient coverage.
+  In ruby 1.8, if I write an expression like "s3 = s1 + s2", where s1 and s2
+  are strings, this is easy because it's a one-dimensional space.
+  
+               s3     =     s1   +   s2
 
-* Unless you take explicit steps to avoid this, the behaviour of the program
-  will vary dependent on what system it is run on.  That is, the *same*
-  program running with the exact *same* data and the *same* version of ruby
-  will behave *differently* on different systems, possibly crashing on one
-  where it worked on the other.  Again, it's possible to defend against
-  this, but it requires additional work.
 
-* It's ridiculously complicated. This document contains around 200 examples
-  of behaviour, and could form the basis of a small book.  It's a +String+
-  for crying out loud!  What other language requires you to understand this
+             ----->       ----->    ----->
+             string       string    string
+
+  As long as s1 and s2 are strings, then I know that s3 will be a string,
+  consisting of the bytes from s1 followed by the bytes from s2. End of
+  story, move to the next line.
+
+  But in ruby 1.9, it becomes a multi-dimensional problem:
+
+               s3     =     s1   +   s2
+
+          enc^         enc^      enc^
+             |            |         |
+             |            |         |
+             +---->       +---->    +---->
+             string       string    string
+  
+  The number possibilities now explodes. What are the possible encodings
+  that s1 might have at this point in the program? What are the possible
+  encodings that s2 might have at this point? Are they compatible, or will
+  an exception be raised? What encoding will s3 have going forward in the
+  next line of the program?
+
+  The reasoning is made even harder because the *content* of the strings is
+  also a dimension in this logic.  s1 and s2 might have different encodings
+  but could still be compatible, depending on whether they are empty or
+  consist only of 7-bit characters, as well as whether they are tagged with
+  an ASCII-compatible encoding.  The encoding of s3 also depends on all
+  these factors, including whether s1 is empty or s2 is empty.
+
+  Analysing a multi-line program then multiplies this further, as you need
+  to carry forward this additional state in your head to where it is next
+  used.
+
+* Now try reasoning about a program which makes uses of strings returned by
+  library functions (core or third party), where those functions almost
+  never document what encoding the string will be tagged with.  You need to
+  guess or test what encoding you get, and/or reason that the encoding
+  actually doesn't matter at this point in the program, because of what you
+  know about the encodings of other strings it will be combined with.
+
+* Whether or not you can reason about whether your program works, you will
+  want to test it. 'Unit testing' is generally done by running the code with
+  some representative inputs, and checking if the output is what you expect.
+  
+  Again, with 1.8 and the simple line above, this was easy. Give it any two
+  strings and you will have sufficient test coverage.
+  
+  With 1.9, there is an explosion of test cases if you want to get proper
+  coverage: the number of different encodings and string contents
+  (empty/ascii/non-ascii) you expect to see for s1, multiplied by the same
+  for s2, plus testing the encoding of the results.
+
+* Unless you take explicit steps to avoid it, the behaviour of a program
+  under ruby 1.9 may vary depending on what system it is run on.  That is,
+  the *same* program running with the exact *same* data and the *same*
+  version of ruby can behave *differently* on different systems, even
+  crashing on one where it worked on the other.  This is because, by
+  default, ruby uses values from the environment to set the encodings of
+  strings read from files.
+  
+  It's possible to override ruby's policy on this, but it requires
+  remembering to use some incantations.  If you accidentally omit one, the
+  program may still work on your system but not on someone else's.
+
+* It's ridiculously complicated. string19.rb contains around 200 examples of
+  behaviour, and could form the basis of a small book.  It's a +String+ for
+  crying out loud!  What other language requires you to understand this
   level of complexity just to work with strings?!  The behaviour is full of
   arbitrary rules and inconsistencies (like /abc/ having encoding US-ASCII
   whilst "abc" having the source encoding, and some string methods raising
@@ -42,7 +98,7 @@ the case.
 
 * Of course, it's very hard to categorise something as a "bug" if you don't
   know what the intended behaviour is.  Almost all the behaviour given in
-  this file is undocumented.  By that I mean: when I look at the
+  string19.rb is undocumented.  By that I mean: when I look at the
   documentation for String#+, I expect at minimum to be told what it
   requires for valid input (i.e.  under what circumstances it will raise an
   exception), and what the properties of the result are.
@@ -70,10 +126,11 @@ the case.
   and you can't compare strings using UCA. So anyone doing serious
   Unicode stuff is still going to need an external library.
   
-* It's ill-conceived. Picking characters out of a string may depend only on
-  the encoding, but other operations (such as collation) depend on the
-  locale. And in any case, the encoding and/or locale information is often
-  carried out-of-band (think: HTTP; MIME E-mail; ASN1 tags)
+* It's ill-conceived. Knowing the encoding is sufficient to pick characters
+  out of a string, but other operations (such as collation) depend on the
+  locale.  And in any case, the encoding and/or locale information is often
+  carried out-of-band (think: HTTP; MIME E-mail; ASN1 tags), or within the
+  string content (think: <?xml charset?>)
 
 However I am quite possibly alone in my opinion.  Whenever this pops up on
 ruby-talk, and I speak out against it, there are two or three others who
