@@ -775,7 +775,7 @@ class TestString < Test::Unit::TestCase
   is 1,
     a <=> b     # but in UCA, hello comes before hellO
 
-# If the strings share a common prefix then the longer string wins.
+# If one string is prefix of the other then the longer string wins.
 # If the strings are bytewise equal and the encodings are equal, it returns 0.
 # If the strings are bytewise equal and are comparable, it returns 0.
 
