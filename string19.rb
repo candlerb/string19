@@ -26,9 +26,6 @@
 # 18. SOURCE ENCODING
 # 19. STRING LITERALS
 # 20. EXTERNAL AND INTERNAL ENCODING
-# 21. SOAPBOX
-# 22. COUNTERMEASURES
-# 23. CONCLUSION
  
 ############# -1. PREAMBLE ###############
 
@@ -1675,71 +1672,7 @@ EOS
 # Like Strings, there are also some methods on IO which explicitly deal
 # only in bytes, such as IO#getbyte and IO#bytes
 
-############# 21. SOAPBOX ###############
-
-# I have tried to keep my personal opinion on all this as separate as
-# possible, and have put it in another file, "soapbox.rb"
-
-############# 22. COUNTERMEASURES #######
-
-# Here are some ways you could protect yourself against problems with String
-# encodings.
-
-# 22.1 Ignore it
-# 
-# You can just cross your fingers and hope. If you write programs which
-# handle only text, and you only run them on the same machine where you
-# write them, you will probably be fine (as long as the libraries you
-# use are also 1.9-safe)
-
-# 22.2 Force encoding everywhere
-#
-# You can open your files with File.open(..., "rb") or File.open(...,
-# "r:UTF-8"); you can set STDIN.external_encoding = "ASCII-8BIT"; you can
-# use force_encoding on every string you receive from an unknown source.
-#
-# The problem with this is that if you forget any one of these, your
-# program may still work fine on your system, but break elsewhere.
-
-# 22.3 Clean the environment
-#
-# You can explicitly set the LC_ALL environment variable before running your
-# ruby script, or run with -Ku to force UTF-8 or -Kn to force ASCII-8BIT.
-#
-# The problem is, this won't work if your code is made up of individual
-# source files which may be re-used elsewhere, unless you always have
-# wrapper scripts to start your program.
-
-# 22.4 Run tests under multiple environments
-#
-# You can run your test suite under each environment which you expect to
-# run under, or try to fake up those environments by installing the
-# necessary locales on one system and then running the test suite multiple
-# times with different LC_ALL settings. This is a bit of a pain.
-
-# 22.5 Expand test coverage
-#
-# You can try to expand your test suite to cover all possible scenarios.
-# For example, every time you call a library function which returns a
-# string, you can stub it out and call it multiple times returning different
-# strings with different encodings. Testing is painful enough already
-# without having to jump through those hoops, and again it's easy to forget
-# a case which may bite you later.
-
-# 22.6 Don't use ruby 1.9
-#
-# This is the solution I am going with. Fortunately, 1.8.6 is continuing to
-# be maintained by Engine Yard and by Phusion, the guys behind Ruby
-# Enterprise Edition.  1.8.7 adds a whole bunch of methods from 1.9 as a
-# sort of transition aid, but as I have no intention to transition to 1.9,
-# this doesn't interest me.  And when ruby 1.8.6 finally dies, hopefully
-# other alternatives will be available.  Reia looks like an interesting one.
-
-############# 23. CONCLUSION ############
-
-# As you can see, it's possible to write a book on the behaviour of
-# String in Ruby 1.9. I personally find this to be an +insane+ level
-# of complexity, despite the obvious intention to "do the right thing".
+############# POSTAMBLE ##################
 
 end # def test_string19
 
