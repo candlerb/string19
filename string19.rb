@@ -358,18 +358,35 @@ class TestString < Test::Unit::TestCase
 
 # 3.3 Regular Expressions
 #
-# In the same way, Regexps also have an 'encoding' but no 'ascii_only?'
+# Regexps also have an 'encoding'. They do not have an 'ascii_only?'
+# property, but they do have a related 'fixed_encoding?' property, which
+# affects the matching compatibility rules (described later). Roughly
+# speaking, a regexp with fixed_encoding? is intended to match strings only
+# of the same encoding.
+#
+# The fixed_encoding? property is not visible when you convert the Regexp
+# back to a string, unlike the //m, //i and //x flags.
 
-  regexp = /gro/
-  is Encoding::US_ASCII,
-    regexp.encoding
+  re = /gro/
+  is [Encoding::US_ASCII, false, "/gro/", "(?-mix:gro)"],
+    [re.encoding, re.fixed_encoding?, re.inspect, re.to_s]
 
-  regexp = /groß/
-  is Encoding::UTF_8,
-    regexp.encoding
+  re = /groß/
+  is [Encoding::UTF_8, true, "/groß/", "(?-mix:groß)"],
+    [re.encoding, re.fixed_encoding?, re.inspect, re.to_s]
+
+  # A UTF-8-only Regexp literal, even without UTF-8 characters
+  re = /gro/u
+  is [Encoding::UTF_8, true, "/gro/", "(?-mix:gro)"],
+    [re.encoding, re.fixed_encoding?, re.inspect, re.to_s]
+
+  # Another way to do this
+  re = Regexp.new("gro", Regexp::FIXEDENCODING)
+  is [Encoding::UTF_8, true, "/gro/", "(?-mix:gro)"],
+    [re.encoding, re.fixed_encoding?, re.inspect, re.to_s]
 
   assert_raises(NoMethodError) {
-    regexp.ascii_only?
+    /gro/.ascii_only?
   }
 
 # 3.4 File and IO objects
@@ -387,7 +404,7 @@ class TestString < Test::Unit::TestCase
 # REFERENCE: see enc_capable() in encoding.c which detects classes which
 # have encoding capabilities.
 
-############# 4. VALID AND FIXED ENCODINGS ################
+############# 4. VALID ENCODINGS ##########################
 
 # Since you can change the encoding tags arbitrarily, it's possible to have
 # a String which is not a valid sequence of characters in the selected
@@ -467,26 +484,6 @@ class TestString < Test::Unit::TestCase
   assert_raises(RegexpError) {  # note: not Encoding::InvalidByteSequenceError
     Regexp.new("hello\xdf")
   }
-
-# However, Regexps do have a 'fixed_encoding?' method. This flag defaults
-# to false, and can be set to true using the (undocumented)
-# Regexp::FIXEDENCODING flag. This flag does not appear when the regexp
-# is converted back to a string, unlike //i, //m and //x options.
-
-  is false,
-    /gro/.fixed_encoding?
-
-if RUBY_VERSION > "1.9.1"
-  re = Regexp.new("gro", Regexp::FIXEDENCODING)
-  is true,
-    re.fixed_encoding?
-  is "/gro/",
-    re.inspect
-  is "(?-mix:gro)",
-    re.to_s
-end
-
-# FIXME: What is the purpose of this flag?
 
 ############# 5. COMPATIBLE OBJECTS #############
 
@@ -591,6 +588,24 @@ end
     Encoding.compatible?(a,b)
 
 # REFERENCE: rb_enc_compatible() in encoding.c
+
+# Regexps with the fixed_encoding? flag are subject to a slightly stricter
+# set of rules. In this case, a regexp which contains only ASCII characters
+# is not compatible with a string with a different encoding if that other
+# string contains non-ASCII characters.
+
+  re = /gro/u
+  
+  str = "gro".force_encoding("ISO-8859-1")
+  assert_nothing_raised {
+    re =~ str
+  }
+  
+  # but:
+  str = "gro\xdf".force_encoding("ISO-8859-1")
+  assert_raises(Encoding::CompatibilityError) {
+    re =~ str
+  }
 
 ############# 6. STRING CONCATENATION #############
 
