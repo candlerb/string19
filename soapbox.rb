@@ -132,6 +132,24 @@ to explain why here.
   carried out-of-band (think: HTTP; MIME E-mail; ASN1 tags), or within the
   string content (think: <?xml charset?>)
 
+* It's too stateful. If someone passes you a string, and you need to make
+  it compatible with some other string (e.g. to concatenate it), then you
+  need to force it's encoding. That's impolite to the caller, as you've
+  mutated the object they passed; furthermore, it won't work at all if they
+  passed you a frozen string. So to do this properly, you really have to
+  dup the string you're being passed, which needlessly copies the entire
+  content.
+
+  # ruby 1.8
+  def append(str)
+    @buf << str
+  end
+  
+  # ruby 1.9
+  def append(str)
+    @buf << str.dup.force_encoding("ASCII-8BIT")
+  end
+
 However I am quite possibly alone in my opinion.  Whenever this pops up on
 ruby-talk, and I speak out against it, there are two or three others who
 speak out equally vociferously in favour.  They tell me I am doing the
@@ -159,4 +177,3 @@ I will now try very hard to find something positive to say about all this.
   must start with a capital 'A' to 'Z'.
 
 * Erm, that's all I can think of at the moment.
-=end
