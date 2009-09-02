@@ -1577,6 +1577,8 @@ EOS
     end
   end
 
+#### OPENING FOR READ ####
+
 # If you do not specify the external encoding when the file is opened, then
 # it is taken from Encoding.default_external, which is initialised based on
 # Encoding.locale_charmap.  That is, the encoding that strings get when read
@@ -1613,10 +1615,72 @@ EOS
     end
   end
 
-# Writing to a file is different. If you have specified the external
-# encoding then transcoding *always* takes place from the encoding of
-# the String you are writing, to the external encoding of the file.
-# As far as I can tell, the internal encoding is ignored in this case.
+#### OPENING FOR WRITE ####
+
+# Writing to a file is different. Firstly, if you don't specify an external
+# encoding when opening the file, then the external_encoding property is
+# nil, and no transcoding is done on output.
+
+  begin
+    str = 'помоник'
+    str.force_encoding("ISO-8859-1")
+    File.open(TMPFILE, "w") do |f|
+      is [nil, nil],
+        [f.external_encoding, f.internal_encoding]
+      f << str
+    end
+    # Demonstrate that str is NOT transcoded from ISO-8859-1 to UTF-8
+    File.open(TMPFILE, "rb") do |f|
+      is str.force_encoding("ASCII-8BIT"),
+        f.read
+    end
+  ensure
+    File.delete(TMPFILE)
+  end
+
+# ----- ASIDE -----
+# Let me say this again: the external encoding for write is NOT
+# automatically set to the encoding from the locale/environment. This leads
+# to some unexpected behaviour in irb, e.g.
+#
+#    >> str = 'помоник'
+#    => "помоник"
+#    >> str.force_encoding("ISO-8859-1")
+#    => "помоник"
+#
+# You would expect to see garbage here, but it appears that the bytes
+# contained in str are squirted directly to the (UTF-8) console, and so
+# they are displayed as UTF-8. If you want the ISO-8859-1 characters to
+# be transcoded to UTF-8, you have to ask for it explicitly:
+#
+#    >> str.encode("UTF-8")
+#    => "Ð¿Ð¾Ð¼Ð¾Ð½Ð¸Ðº"
+#
+# Or: STDOUT.set_encoding "UTF-8"
+#
+# There is some more irb strangeness depending on the string content:
+#
+#    >> str = "über"
+#    => "über"
+#    >> str.force_encoding("ISO-8859-1")
+#    => "über"
+#    >> str = "groß"
+#    => "groß"
+#    >> str.force_encoding("ISO-8859-1")
+#    => "gro�\x9F"
+#    >> puts str
+#    groß
+#    => nil
+#
+# I believe this is just an artefact of String#inspect, which "knows" that
+# \x80 to \x9f are not printable ISO-8859-1 chars and converts them to
+# hex representation, thus breaking the UTF-8 display.
+# ----- END ASIDE -----
+
+# If you have specified the external encoding then transcoding takes place
+# from the encoding of whatever String you are writing, to the external
+# encoding of the file. As far as I can tell, the internal encoding is
+# ignored in this case.
 
   begin
     File.open(TMPFILE, "w:ISO-8859-1") do |f|
