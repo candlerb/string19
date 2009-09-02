@@ -1656,7 +1656,12 @@ EOS
 #    >> str.encode("UTF-8")
 #    => "Ð¿Ð¾Ð¼Ð¾Ð½Ð¸Ðº"
 #
-# Or: STDOUT.set_encoding "UTF-8"
+# Or you can request transcoding to take place on STDOUT:
+#
+#    >> STDOUT.set_encoding "locale"
+#    => #<IO:<STDOUT>>
+#    >> str
+#    => "Ð¿Ð¾Ð¼Ð¾Ð½Ð¸Ðº"
 #
 # There is some more irb strangeness depending on the string content:
 #
