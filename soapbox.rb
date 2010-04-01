@@ -1,5 +1,10 @@
 =begin rant
 
+More discussion at
+* http://www.ruby-forum.com/topic/173380
+* http://www.ruby-forum.com/topic/179303
+* http://www.ruby-forum.com/topic/192218
+
 For me, I absolutely hate all this encoding stuff in ruby 1.9, and I'll try
 to explain why here.
 
@@ -177,3 +182,5 @@ I will now try very hard to find something positive to say about all this.
   must start with a capital 'A' to 'Z'.
 
 * Erm, that's all I can think of at the moment.
+
+=end
