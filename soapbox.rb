@@ -79,6 +79,10 @@ to explain why here.
   default, ruby uses values from the environment to set the encodings of
   strings read from files.
   
+  Even on the same system, your program could work when run from an
+  interactive shell but fail when run from a daemon such as cron. See
+  http://www.ruby-forum.com/topic/211476#918885
+
   It's possible to override ruby's policy on this, but it requires
   remembering to use some incantations.  If you accidentally omit one, the
   program may still work on your system but not on someone else's.
@@ -154,6 +158,10 @@ to explain why here.
   def append(str)
     @buf << str.dup.force_encoding("ASCII-8BIT")
   end
+
+* The arbitrary rules are constantly changing. For example, the behaviour
+  of \w and \s in a regexp will be different in the 1.9.2 release.
+  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/30543
 
 However I am quite possibly alone in my opinion.  Whenever this pops up on
 ruby-talk, and I speak out against it, there are two or three others who
