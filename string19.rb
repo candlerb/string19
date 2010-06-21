@@ -816,6 +816,20 @@ class TestString < Test::Unit::TestCase
 
 # REFERENCE: rb_str_cmp_m in string.c
 
+# It's important to realise that ruby 1.9 does not sort by codepoints, it
+# sorts by bytes.  It's a convenient property of UTF-8 encoding that lower
+# codepoints sort before higher ones, but this does not work for all
+# encodings, not even all encodings of unicode.  Here's an example of where
+# the distinction is important:
+
+  s1 = 97.chr("UTF-8")		# a
+  s2 = 257.chr("UTF-8")		# ā
+  is true, s1 < s2		# expected
+  
+  s1 = 97.chr("UTF-16LE")	# a
+  s2 = 257.chr("UTF-16LE")	# ā
+  is false, s1 < s2		# not ordered by codepoint
+
 # In ruby 1.9 these questions have to be considered for symbols too, since
 # symbols now have string-like properties. As far as I can see, the same
 # rules are applied to symbols as for strings. In particular, this means
