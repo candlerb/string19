@@ -673,6 +673,19 @@ class TestString < Test::Unit::TestCase
     a << b
   }
 
+# Note that it *is* permissible to label a string containing bytes with
+# the top bit set as US-ASCII, without raising any error.
+
+  a = "\xde\xad\xbe\xef"
+  assert_nothing_raised {
+    a.force_encoding("US-ASCII")
+  }
+  is Encoding::US_ASCII,
+    a.encoding
+
+# This makes it somewhat unclear as to what the difference between ASCII-8BIT
+# and US-ASCII is supposed to be.
+
 ############# 8. SINGLE CHARACTERS #######
 
 # The String#[] method now uses character indexes, rather than byte indexes.
