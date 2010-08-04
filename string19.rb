@@ -1111,6 +1111,13 @@ EOS
 # Ditto count, delete, end_with?, include?, start_with?, index, rindex
 # Ditto the % operator with %s and %c format specifiers.
 
+# The following behaviour is bizarre, and I suspect unintentional,
+# so I have commented it out: see http://www.ruby-forum.com/topic/214297
+#  
+#   s = "%c%c%c%c%c".force_encoding("US-ASCII")
+#   t = s % [49, 5, 245, 225, 1]
+#   is Encoding::US_ASCII, t.encoding
+
 # String#tr and tr_s take two String arguments. Both must be compatible
 # with the source string.
 
@@ -1274,6 +1281,18 @@ EOS
   # need to sanitise the result otherwise we can't regexp-match it!
   res.force_encoding("ASCII-8BIT")
   assert_match /invalid multibyte char/, res
+
+# As a special case, Strings created with String.new with no argument
+# always get ASCII-8BIT encoding. Remember that this file is UTF-8 source:
+
+  is Encoding::ASCII_8BIT,
+    String.new.encoding
+  is Encoding::UTF_8,
+    String.new("").encoding
+
+  is "ASCII-8BIT", execute_in_file(<<EOS)  # although source enc is US-ASCII
+puts String.new.encoding
+EOS
 
 # 18.2 Source read from stdin
 #
