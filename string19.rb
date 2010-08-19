@@ -29,10 +29,11 @@
  
 ############# -1. PREAMBLE ###############
 
-# This file is runnable documentation. It runs for me under Ubuntu Hardy
-# using ruby-1.9.2-preview1 with my default en_GB.utf8 locale. I believe it
-# will run on other systems, but it may not, given that Ruby's String
-# behaviour is sensitive to the environment in which it is run.
+# This file is runnable documentation. It runs for me under Ubuntu Lucid
+# using ruby-1.9.2-p0 and ruby-1.9.1-p429 compiled from source, with my
+# default en_GB.utf8 locale. I believe it will run on other systems, but it
+# may not, given that Ruby's String behaviour is sensitive to the
+# environment in which it is run.
 
 # The following code is just for setting up the test cases.
 
@@ -100,8 +101,11 @@ class TestString < Test::Unit::TestCase
   is "ASCII-8BIT",
     Encoding::BINARY.to_s
 
-  is ["ASCII-8BIT", "BINARY"],
-    Encoding::ASCII_8BIT.names
+  # NOTE: 1.9.2 gives me ["ASCII-8BIT", "BINARY"]
+  # but 1.9.1 gives me ["ASCII-8BIT", "BINARY", "filesystem"]
+  
+  assert Encoding::ASCII_8BIT.names.include? "ASCII-8BIT"
+  assert Encoding::ASCII_8BIT.names.include? "BINARY"
 
   is "ASCII-8BIT",
     Encoding.aliases["BINARY"]
@@ -377,10 +381,12 @@ class TestString < Test::Unit::TestCase
   is [Encoding::UTF_8, true, "/gro/", "(?-mix:gro)"],
     [re.encoding, re.fixed_encoding?, re.inspect, re.to_s]
 
-  # Another way to do this
+if RUBY_VERSION >= "1.9.2"
+  # Another way to do this (1.9.2 only)
   re = Regexp.new("gro", Regexp::FIXEDENCODING)
   is [Encoding::UTF_8, true, "/gro/", "(?-mix:gro)"],
     [re.encoding, re.fixed_encoding?, re.inspect, re.to_s]
+end
 
   assert_raises(NoMethodError) {
     /gro/.ascii_only?
@@ -445,16 +451,26 @@ class TestString < Test::Unit::TestCase
     :gro.valid_encoding?
   }
 
-# You can create a symbol with an invalid encoding, but you cannot #inspect
-# it, so irb gives an error if you try to display one:
+# As of ruby 1.9.2, you cannot create a symbol with an invalid encoding.
+#
+# Prior to this you could create a symbol with an invalid encoding, but you
+# could not #inspect it, so irb gave an error if you tried to display one:
 #
 #   >> "hello\xdf".to_sym
 #   ArgumentError: invalid byte sequence in UTF-8
 #           from /usr/local/lib/ruby/1.9.1/irb/inspector.rb:84:in `inspect'
 #
 # That appears to be a problem with the display, not the generation.
-# That is: Symbol#inspect raises an exception for these symbols. This has
-# been raised as a possible bug: http://redmine.ruby-lang.org/issues/show/1843
+# That is: Symbol#inspect raises an exception for these symbols.
+
+if RUBY_VERSION >= "1.9.2"
+
+  assert_raises(EncodingError) {
+    str = "hello\xdf".force_encoding("UTF-8")
+    sym = str.to_sym
+  }
+
+else
 
   str = "hello\xdf".force_encoding("UTF-8")
   sym = str.to_sym
@@ -465,6 +481,8 @@ class TestString < Test::Unit::TestCase
   assert_raises(ArgumentError) {
     sym.inspect
   }
+
+end
 
 # Similarly, Regexps do not have 'force_encoding' or 'valid_encoding?'
 # methods.
@@ -876,7 +894,8 @@ class TestString < Test::Unit::TestCase
   }
 
 # Regular expressions can be tested for equality, and differ if they have
-# differing encodings, but they do not collate.
+# differing encodings, but they do not collate. Prior to 1.9.2,
+# Regexp#<=> did not exist. In 1.9.2, Object has <=>, so you get nil.
 
   a1 = "groß".force_encoding("UTF-8")
   a2 = "groß".force_encoding("ISO-8859-1")
@@ -884,9 +903,19 @@ class TestString < Test::Unit::TestCase
     Regexp.new(a1) == Regexp.new(a1)
   is false,
     Regexp.new(a1) == Regexp.new(a2)
+
+if RUBY_VERSION >= "1.9.2"
+
+  is nil, Regexp.new(a1) <=> Regexp.new(a2)
+  is nil, Object.new <=> Object.new
+
+else
+
   assert_raises(NoMethodError) {
     Regexp.new(a1) <=> Regexp.new(a2)
   }
+
+end
 
 ############# 10. HASH AND EQL? ############
 
