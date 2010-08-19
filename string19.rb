@@ -894,8 +894,7 @@ end
   }
 
 # Regular expressions can be tested for equality, and differ if they have
-# differing encodings, but they do not collate. Prior to 1.9.2,
-# Regexp#<=> did not exist. In 1.9.2, Object has <=>, so you get nil.
+# differing encodings...
 
   a1 = "groß".force_encoding("UTF-8")
   a2 = "groß".force_encoding("ISO-8859-1")
@@ -904,15 +903,20 @@ end
   is false,
     Regexp.new(a1) == Regexp.new(a2)
 
+# ... but they do not collate. Prior to 1.9.2, Regexp#<=> did not exist.
+# In 1.9.2, Regexp#<=> returns 0 for equal regexps and nil otherwise.
+# Object#<=> exists in 1.9.2 too.
+
 if RUBY_VERSION >= "1.9.2"
 
-  is nil, Regexp.new(a1) <=> Regexp.new(a2)
+  is 0, Regexp.new("foo") <=> Regexp.new("foo")
+  is nil, Regexp.new("foo") <=> Regexp.new("bar")
   is nil, Object.new <=> Object.new
 
 else
 
   assert_raises(NoMethodError) {
-    Regexp.new(a1) <=> Regexp.new(a2)
+    Regexp.new("foo") <=> Regexp.new("foo")
   }
 
 end
