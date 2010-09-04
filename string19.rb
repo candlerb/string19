@@ -176,8 +176,16 @@ class TestString < Test::Unit::TestCase
 # Most encodings are in fact ASCII-compatible. An example of one which is not
 # is Encoding::UTF_16BE (because all characters are two bytes)
 #
-# As far as I can see this property of the encoding isn't directly exposed to
-# the Ruby programmer, but you can test for it indirectly like this:
+# In ruby 1.9.2, this property is directly exposed:
+
+if RUBY_VERSION >= "1.9.2"
+
+  is true,
+    Encoding::UTF_8.ascii_compatible?
+
+end
+
+# In 1.9.1 and earlier you had to test for it indirectly, e.g.
 #
 #    Encoding.list.find_all { |e| 
 #      !Encoding.compatible?("a".force_encoding(e), "a")
