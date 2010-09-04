@@ -70,6 +70,10 @@ class TestString < Test::Unit::TestCase
 # I've tried to provide runnable examples of each aspect of the behaviour,
 # but I also know that it is far from complete.
 
+# Other documents of note:
+# http://yokolet.blogspot.com/2009/07/design-and-implementation-of-ruby-m17n.html
+# http://ruby.runpaint.org/encoding
+
 ############# 1. ENCODINGS #######################
 
 # An "encoding" is a character set, and ruby 1.9 comes with a large set of
