@@ -1,9 +1,10 @@
 =begin rant
 
-More discussion at
+More discussion, and examples of problems, at
 * http://www.ruby-forum.com/topic/173380
 * http://www.ruby-forum.com/topic/179303
 * http://www.ruby-forum.com/topic/192218
+* http://www.ruby-forum.com/topic/216873
 
 For me, I absolutely hate all this encoding stuff in ruby 1.9, and I'll try
 to explain why here.
