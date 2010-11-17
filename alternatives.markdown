@@ -48,100 +48,67 @@ Anyway, given all this, how do I think ruby should have dealt with the issue
 of encodings?
 
 
-Option 1: Don't tag strings
+Option 0: Don't tag strings
 ---------------------------
 
-What I mean is, turn Strings back into being one-dimensional arrays of
-bytes, not tagged with any encoding.  This basically rolls things back to
-ruby 1.8.
+What I mean is, leave Strings as one-dimensional arrays of bytes, not tagged
+with any encoding.  This basically rolls things back to ruby 1.8, and this
+is what I'm sticking with.
 
-So how to deal with text in encodings, if not in the ruby 1.9 way?  Well,
-simple operations like concatenation are just operations on bytes anyway. 
-So this leaves only a small number of cases for which the language could
-provide support.
+For people who want to use non-ASCII text, make them work with UTF-8.
+There is regexp support for this in 1.8 already. Some extra methods could
+be added to make life more convenient, e.g.
 
-### Multiple encodings ###
+* counting the number of characters: `str.charsize`
+* extracting characters: `str.substr(0..50)`
+* transcoding: `str.encode("ISO-8859-1", "UTF-8")`
 
-Some tiny minority of programs might be juggling Strings of different
-encodings internally at the same time.  For each String you want to carry
-state saying what encoding it is in.  Fine: then make a wrapper class which
-carries a String and its Encoding.  Have it as a library you can require.
 
-Most programs will either just work with one encoding throughout, or will
-transcode at the edges.
+Option 1: binary and UTF-8
+--------------------------
 
-### Substrings ###
+Python 3.0 and Erlang both have two distinct data structures, one for binary
+data and one for UTF-8 text.  This could be implemented as two classes, e.g. 
+String and Binary, or as a String with a one-bit binary flag.
 
-e.g. truncate a string to the first 50 characters. This means having
-operations like [] and slice which work on characters rather than bytes. 
+You'd need some way to distinguish a binary literal from a string one,
+maybe just Binary.new(...)
 
-I'd just add a new method:
+The main difference between this and option 0 is that [], length, chop etc
+would work differently on binaries and strings, whereas option 0 above would
+have different methods like String#substr, String#charsize, String#charchop
+etc.
 
-    str.chars(0..50, "UTF-8")
+TODO: flesh out the various cases like what happens when combining String
+and Binary.
 
-In some cases you'll want to use the encoding from the environment, as sed
-does:
+Going with either option 0 or 1 would eliminate most of the complexity
+inherent in ruby 1.9.
 
-    str.chars(0..50, "locale")
+All non-UTF-8 data would be transcoded at the boundary (something which is
+needed for stateful encodings like ISO-2022-JP anyway).
 
-I observe that getting the n'th character of a String in a variable-width
-encoding is inherently an expensive operation, and so it seems reasonable to
-make this slightly more awkward than the [] syntax.  It flags to you that if
-you have a lot of processing to do, maybe you should transcode the whole
-string to a fixed-width encoding first.
+What you'd lose is the ability to handle things like EUC-JP and GB2312
+"natively", without transcoding to UTF-8 and back again.  Is that important? 
+Aren't these "legacy" character sets anyway?  If it is important, you could
+still have an external library for dealing with them natively.
 
-### Regexps ###
+UTF-16 and UTF-32 would also need transcoding, but this is lossless.
 
-Matching text against a regexp can be done by setting the encoding on the
-regexp, not the text.  ruby 1.8 allowed this for a handful of encodings,
-like `/.../u` for UTF-8.
+You'd lose the ability to write ruby scripts in non-UTF-8 character sets,
+but on the plus side, all the rules for #encoding tags would no longer be
+needed.  Note that ruby 1.9 requires constants to start with capital 'A' to
+'Z', so it's not possible to write programs entirely in non-Roman scripts
+anyway.
 
-The encoding can be given when building a regexp: e.g.
-`Regexp.new("str", "encoding")`
+Programs which use non-UTF-8 data would have to be written to take this into
+account.  e.g.
 
-and I'd also be fine with tagging the source file to set the default for all
-the regexp literals inside it:
+    File.open("/path/to/data", "r:IBM437")   # transcode to UTF-8
+    File.open("/path/to/data2", "w:IBM437")  # transcode from UTF-8
 
-    # encoding: iso-8859-1
-    ...
-    str =~ /foo/       # Regexp.new("foo", "iso-8859-1")
-
-I strongly believe that regexp matching should not raise an exception even
-in the presence of invalid characters.  This is the same as sed, and indeed
-the same as ruby 1.9's `String#[]` method.
-
-By the way, something that I think ruby 1.8 got wrong was the ability to
-set $KCODE from the command line, and to compile --with-default-kcode.
-
-When Apple built ruby 1.8 for the Mac they set `--with-default-kcode=UTF8`,
-and this simply means that programs written elsewhere may crash when
-run on the Mac. For an example see http://www.ruby-forum.com/topic/216511
-
-Tagging each source file for regexp encoding (1.9-style) makes more
-sense.  But I'm proposing that this tagging applies only to regexp literals,
-not to string literals as well.
-
-### Transcoding ###
-
-Iconv does this nicely, but I have no problem adding methods to String to
-make this more convenient.
-
-    str.encode!("UTF-8", "ISO-8859-1")    # encode to UTF-8 from ISO-8859-1
-
-Having the ability to auto-transcode on input and output is of course
-useful, and being able to use the environment locale if you ask for it. e.g.
-
-    File.open("/etc/passwd","r:UTF-8:ISO-8859-1")
-    File.open("/etc/passwd","r:UTF-8:locale")
-
-Unlike ruby 1.9, the strings themselves would not be tagged.
-
-### Nothing else? ###
-
-If I think of anything else I'll add it here, but I think that's it. It
-solves the problems I listed above, and it gives the tools for working with
-text in various encodings whilst not breaking programs which work with
-binary data.
+I have no objection to making "r:locale" and "w:locale" available, but IMO
+that should not be the default.
 
 
 Option 2: Band-aids
@@ -154,12 +121,20 @@ that decision, I don't expect this ever to happen.
 So could we apply some tweaks to the current system to make it more
 reasonable? Here are some options.
 
+* When opening a text file ("r" or "w" as opposed to "rb" or "wb") then
+  make the external encoding default to UTF-8. If you want it to be
+  different then use "r:<encoding>" or "r:locale" when opening a file.
+
+  Or even make it default to US-ASCII, like source encodings do. This
+  is consistent and *forces* people to decide whether to open a file as
+  UTF-8, some other encoding, or guess from the locale.
+
+  (Making both files and source encodings default to UTF-8 is perhaps
+  more helpful though)
+
 * Have a universally-compatible "BINARY" encoding. Any operation between
   BINARY and FOO gives encoding BINARY, and transcoding between BINARY and
   any other encoding is a null operation.
-
-* Open all files in BINARY mode, except where explicitly asked:
-  `File.open("/etc/passwd","r:locale")`
 
 * Treat invalid characters in the same way as String#[] does, i.e. never
   raise an exception. In particular, regexp matching always succeeds.
