@@ -72,6 +72,24 @@ to explain why here.
   (empty/ascii/non-ascii) you expect to see for s1, multiplied by the same
   for s2, plus testing the encoding of the results.
 
+  Third-party libraries need this sort of test coverage too, but generally
+  don't have it. For an example of the problems this can cause, see
+  http://www.ruby-forum.com/topic/476119
+
+  Here a user is taking a string returned by Sinatra (which tags it as
+  ASCII-8BIT) and passing it as a query argument to sqlite3-ruby. The
+  sqlite3-ruby query fails, even though the string contains only ASCII
+  characters, but the query works if given the same string tagged US-ASCII
+  or UTF-8.
+  
+  You can argue weakly that this is a bug in Sinatra (for not tagging the
+  string UTF-8, which it could have done from the Content-Type:...encoding
+  header), or more strongly that this is a bug in sqlite3-ruby; but neither
+  library documents or tests its encoding-related behaviour, so you're
+  basically relying on undefined behaviour in your application.
+  
+  Such problems can be a real nightmare to debug.
+
 * Unless you take explicit steps to avoid it, the behaviour of a program
   under ruby 1.9 may vary depending on what system it is run on.  That is,
   the *same* program running with the exact *same* data and the *same*
