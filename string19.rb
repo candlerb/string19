@@ -1124,6 +1124,26 @@ EOS
 
 # Rather, I will document the behaviour where it is not necessarily obvious.
 
+# String#size counts the number of *codepoints*, which is not necessarily
+# the same as the number of graphemes or "visible characters". For example,
+# the non-printing character zero-width non-joiner (ZWNJ) is counted as one 
+# character:
+# http://en.wikipedia.org/wiki/Zero-width_non-joiner
+
+  is 1,
+    "\u200c".size
+
+# And a letter followed by a combining character is counted as
+# two characters:
+# http://www.alanwood.net/unicode/combining_diacritical_marks.html
+
+  is 2,
+    "o\u0300".size
+
+# Hence if you are using String#size to work out the displayed width
+# of a piece of text you may get the wrong answer, even when using
+# a monospaced font.
+
 # String#clear leaves the encoding unchanged:
 
   s = "\xfcber".force_encoding("ISO-8859-1")
