@@ -73,9 +73,18 @@ to explain why here.
   for s2, plus testing the encoding of the results.
 
   Third-party libraries need this sort of test coverage too, but generally
-  don't have it. For an example of the problems this can cause, see
-  http://www.ruby-forum.com/topic/476119
+  don't have it.
 
+* Sane programming languages have a well-defined concept of equality.
+  If a == b then you can be fairly sure that foo(a) will do the same
+  as foo(b)  [note 1]
+
+  Strings in ruby 1.9 don't work this way. You can have two strings which
+  '==' says are the same, and they are the same when you print or inspect
+  them, but they behave differently when used. For example see
+  http://www.ruby-forum.com/topic/476119#964668
+  http://www.ruby-forum.com/topic/658559
+  
   Here a user is taking a string returned by Sinatra (which tags it as
   ASCII-8BIT) and passing it as a query argument to sqlite3-ruby. The
   sqlite3-ruby query fails, even though the string contains only ASCII
@@ -89,6 +98,9 @@ to explain why here.
   basically relying on undefined behaviour in your application.
   
   Such problems can be a real nightmare to debug.
+
+  [note 1] Floating-point numbers sometimes break this rule. For example,
+  -0.0 == 0.0, but 1/-0.0 != 1/0.0
 
 * Unless you take explicit steps to avoid it, the behaviour of a program
   under ruby 1.9 may vary depending on what system it is run on.  That is,
@@ -113,6 +125,9 @@ to explain why here.
   arbitrary rules and inconsistencies (like /abc/ having encoding US-ASCII
   whilst "abc" having the source encoding, and some string methods raising
   exceptions on invalid encodings and others not)
+
+  It's hard to define the aesthetics of "simple" and "clean" design,
+  but this certainly isn't.
 
 * It's buggy as hell. I found loads of bugs just in the process of
   documenting this. To me this two could imply two things:
