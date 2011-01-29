@@ -215,6 +215,11 @@ I will now try very hard to find something positive to say about all this.
   I can only think of one occasion where I've ever had to do this. Maybe
   other people do this all the time.
 
+  (In any case, this gives you N codepoints, which is not necessarily the
+  same as N graphemes or "visible characters". Some codepoints are invisible,
+  and some combinations of codepoints form a single grapheme, so you could
+  end up splitting a grapheme)
+
 * You can write regular expressions to match against UTF-8 strings.  Of
   course, ruby 1.8 can do that, by the much simpler approach of tagging the
   regexp as UTF-8, rather than every other string object in the system.
