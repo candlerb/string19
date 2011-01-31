@@ -1631,15 +1631,25 @@ EOS
     end
   end
 
-# However, if you read bytes using read(), you always get ASCII_8BIT
+# IO#getc/readchar returns a single *character* from the given stream
+# with the encoding it was opened with - that is, it may read multiple bytes.
+# However, IO#read(N) reads that number of *bytes*, and tags the data as
+# ASCII-8BIT. As far as I can see, there is no way to say "read 1000
+# complete chars" from a stream, short of calling IO#getc / IO#readchar 1000
+# times.
 
-  write_file("abc") do |fn|
-    File.open(fn, "r:ISO-8859-1") do |f|
-      s = f.read(3)
-      is Encoding::ASCII_8BIT,
-        s.encoding
+  write_file("üßzz") do |fn|
+    File.open(fn, "r:UTF-8") do |f|
+      is "ü", f.readchar
+      is "ß", f.getc
     end
-  end
+
+    File.open(fn, "r:UTF-8") do |f|
+      data = f.read(3)
+      is "\xC3\xBC\xC3".force_encoding("ASCII-8BIT"),
+        data  # character ß has been split!
+    end
+ end
 
 # If the file is opened in binary mode (rb), you always get ASCII_8BIT.
 # This also disables newline conversions on Windows machines.
@@ -1678,13 +1688,13 @@ EOS
 # The method 'set_encoding' can be used to change the encoding of an
 # open File or IO stream, affecting subsequent IO operations
 
-  write_file("\xfcber\n\xfcber\n") do |fn|
+  write_file("\xfcber\n\xc3\xbcber\n") do |fn|
     File.open(fn, "r:ISO-8859-1") do |f|
       s = f.gets
       is "\xfcber\n".force_encoding("ISO-8859-1"), s
       f.set_encoding("UTF-8", nil)   # external, [internal]
       s = f.gets
-      is "\xfcber\n", s
+      is "über\n", s
     end
   end
 
