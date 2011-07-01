@@ -76,10 +76,11 @@ class TestString < Test::Unit::TestCase
 
 ############# 1. ENCODINGS #######################
 
-# An "encoding" is a character set, and ruby 1.9 comes with a large set of
-# predefined encodings with an instance of the Encoding class representing
-# each one.  They are all constants under the Encoding namespace, and you
-# can get a list of them all using Encoding.list
+# An "encoding" is a character set combined with a way of representing each
+# of those characters as sequences of bytes.  Ruby 1.9 comes with a large
+# set of predefined encodings with an instance of the Encoding class
+# representing each one.  They are all constants under the Encoding
+# namespace, and you can get a list of them all using Encoding.list
 
   is Encoding,
     Encoding::UTF_8.class
