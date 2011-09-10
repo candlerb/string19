@@ -1824,10 +1824,13 @@ EOS
   end
 
 # Note that unlike read(), even data written using write() is transcoded.
+# The return value is always the number of bytes, not number of characters,
+# after transcoding.
 
   begin
     File.open(TMPFILE, "w:ISO-8859-1") do |f|
-      f.write "über"
+      is 4,
+        f.write("über")
     end
     File.open(TMPFILE, "rb") do |f|
       is "\xfcber".force_encoding("ASCII-8BIT"),
@@ -1837,19 +1840,62 @@ EOS
     File.delete(TMPFILE)
   end
 
-# If you don't want to transcode, then open the file in binary mode.
+  begin
+    File.open(TMPFILE, "w:UTF-8") do |f|
+      str = "\xfcber".force_encoding("ISO-8859-1")
+      is 5,
+        f.write(str)
+    end
+  ensure
+    File.delete(TMPFILE)
+  end
+
+# If a file is opened in binary mode then this sets the external encoding
+# to ASCII-8BIT (for both read and write)
 
   begin
     File.open(TMPFILE, "wb") do |f|
-      f.write "über"
+      is Encoding::ASCII_8BIT,
+        f.external_encoding
+      assert_nothing_raised {
+        f.write "über"         # <<< NOTE!
+      }
     end
     File.open(TMPFILE, "rb") do |f|
+      is Encoding::ASCII_8BIT,
+        f.external_encoding
       is "\xC3\xBCber".force_encoding("ASCII-8BIT"),
         f.gets
     end
   ensure
     File.delete(TMPFILE)
   end
+
+# NOTE: There is special behaviour going on here. Normally, transcoding a
+# string which contains non-ASCII characters to ASCII-8BIT would raise an
+# exception:
+
+  str = "über"
+  assert_raises(Encoding::UndefinedConversionError) { # "U+00DF from UTF-8 to ASCII-8BIT"
+    str.encode("ASCII-8BIT")
+  }
+
+# However you can see that in the file writing case, the external_encoding
+# is ASCII_8BIT, the source string is UTF-8, yet no exception is raised.
+# The same is true if you set the external encoding to ASCII-8BIT explicitly
+# and don't use the 'b' flag.
+
+  begin
+    File.open(TMPFILE, "w:ASCII-8BIT") do |f|
+      assert_nothing_raised {
+        f.write "über"
+      }
+    end
+  ensure
+    File.delete(TMPFILE)
+  end
+
+#### SOCKETS ####
 
 # When you open a socket, the default_external_encoding is ignored and
 # ASCII-8BIT is always used.
