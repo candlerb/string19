@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby19
 # encoding: UTF-8
-# This document is Copyright (C) Brian Candler 2009. All rights reserved.
+# This document is Copyright (C) Brian Candler 2009 and released under a
+# Creative Commons Attribution-NonCommercial 3.0 Unported License.
 
 ############# CONTENTS ###################
 
