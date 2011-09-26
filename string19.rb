@@ -1374,6 +1374,16 @@ EOS
 puts String.new.encoding
 EOS
 
+# Aside: StringIO.new is different. It appears to take its encoding
+# from the environment, when not passed an initial string.
+#
+#     >> require 'stringio'
+#     => true
+#     >> Encoding.default_external = "ISO-8859-14"
+#     => "ISO-8859-14"
+#     >> StringIO.new.string.encoding
+#     => #<Encoding:ISO-8859-14>
+
 # 18.2 Source read from stdin
 #
 # Source read from stdin defaults to the locale encoding. But it can also be
